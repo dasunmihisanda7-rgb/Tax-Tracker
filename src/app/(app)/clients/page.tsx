@@ -11,9 +11,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ExportButton } from "@/components/export-button";
 import { PageHeader } from "@/components/page-header";
-import { createClient } from "@/lib/supabase/server";
-import { TAX_TYPES, clientTypeLabel, type TaxType } from "@/lib/constants";
+import { TableSkeleton } from "@/components/skeletons";
+import { clientTypeLabel } from "@/lib/constants";
+import { loadClients } from "@/lib/data/clients";
+import type { SearchParams } from "@/lib/data/params";
 import { ClientFilters } from "./client-filters";
 
 export default function ClientsPage({ searchParams }: PageProps<"/clients">) {
@@ -24,6 +27,9 @@ export default function ClientsPage({ searchParams }: PageProps<"/clients">) {
         description="Everyone the firm advises, and the tax types each one pays."
         actions={
           <>
+            <Suspense>
+              <ExportButton kind="clients" />
+            </Suspense>
             <Link href="/clients/import" className={buttonVariants({ variant: "outline" })}>
               <Upload className="size-4" />
               Bulk add
@@ -38,54 +44,20 @@ export default function ClientsPage({ searchParams }: PageProps<"/clients">) {
       <Suspense>
         <ClientFilters />
       </Suspense>
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading clients…</p>}>
+      <Suspense fallback={<TableSkeleton />}>
         <ClientsTable searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-
-async function ClientsTable({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  // Characters with meaning in PostgREST's or() syntax become the * wildcard ("match anything").
-  const q = first(sp.q).trim().replace(/[,()*%\\:"']/g, "*");
-  const tax = first(sp.tax) as TaxType | "";
-  const status = first(sp.status) || "active";
-
-  const supabase = await createClient();
-  let query = supabase
-    .from("clients")
-    .select("id, name, client_type, contact_person, phone, tin, is_active, client_tax_types(tax_type, is_active)")
-    .is("deleted_at", null)
-    .order("name");
-  if (status === "active") query = query.eq("is_active", true);
-  if (status === "inactive") query = query.eq("is_active", false);
-  if (q) query = query.or(`name.ilike.*${q}*,contact_person.ilike.*${q}*,tin.ilike.*${q}*`);
-
-  const { data, error } = await query;
+async function ClientsTable({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const { clients, filtered, error } = await loadClients(await searchParams);
   if (error) {
-    return <p className="text-sm text-destructive">Could not load clients: {error.message}</p>;
+    return <p className="text-sm text-destructive">Could not load clients: {error}</p>;
   }
 
-  const order = TAX_TYPES.map((t) => t.code);
-  const clients = data
-    .map((c) => ({
-      ...c,
-      taxTypes: c.client_tax_types
-        .filter((t) => t.is_active)
-        .map((t) => t.tax_type)
-        .sort((a, b) => order.indexOf(a) - order.indexOf(b)),
-    }))
-    .filter((c) => !tax || c.taxTypes.includes(tax));
-
   if (clients.length === 0) {
-    const filtered = Boolean(q || tax || status !== "active");
     return (
       <div className="rounded-lg border border-dashed p-10 text-center">
         <p className="font-medium">{filtered ? "No clients match these filters." : "No clients yet."}</p>

@@ -11,44 +11,12 @@ import {
 } from "@/components/ui/sheet";
 import { MoneyBadge } from "@/components/status-badges";
 import { cn } from "@/lib/utils";
-import { TAX_TYPES, type FundingMethod, type MoneyStatus, type PaidBy, type PaymentMode, type TaxType } from "@/lib/constants";
+import { TAX_TYPES } from "@/lib/constants";
 import { formatAmount, formatDate } from "@/lib/format";
+import type { GridPeriod, GridRow } from "@/lib/data/grids";
 import { ObligationPanel } from "./obligation-panel";
 
-export type GridPayment = {
-  id: string;
-  paid_on: string;
-  amount: number;
-  paid_by: PaidBy;
-  ref_no: string | null;
-  note: string | null;
-  entered_by: string;
-};
-export type GridReceipt = {
-  id: string;
-  received_on: string;
-  funding_method: FundingMethod;
-  payment_mode: PaymentMode;
-  ref_no: string | null;
-  amount: number;
-  entered_by: string;
-};
-export type GridCell = {
-  received: number;
-  paid: number;
-  balance: number;
-  status: MoneyStatus;
-  payments: GridPayment[];
-  receipts: GridReceipt[];
-};
-export type GridRow = {
-  key: string;
-  client_id: string;
-  client_name: string;
-  tax_type: TaxType;
-  cells: Record<string, GridCell>;
-};
-export type GridPeriod = { id: string; code: string; label: string; due_date: string };
+export type { GridCell, GridPayment, GridPeriod, GridReceipt, GridRow } from "@/lib/data/grids";
 
 export function PaymentGrid({
   tab,

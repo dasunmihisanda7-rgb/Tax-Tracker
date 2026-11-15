@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
+import { FormSkeleton } from "@/components/skeletons";
 import { createClient } from "@/lib/supabase/server";
 import { colomboTodayIso, formatAmount } from "@/lib/format";
 import { loadEntryFormData } from "@/lib/receipts/form-data";
@@ -14,7 +15,7 @@ export default function EditReceiptPage({ params }: PageProps<"/client-receipts/
         description="Changes one receipt row. Other rows with the same reference number are not changed."
         back={{ href: "/client-receipts", label: "Client Receipts" }}
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<FormSkeleton />}>
         <EditReceipt params={params} />
       </Suspense>
     </div>

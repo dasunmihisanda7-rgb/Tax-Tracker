@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { DatePicker } from "@/components/date-picker";
 import { SimpleSelect } from "@/components/simple-select";
 import { cn } from "@/lib/utils";
-import { TAX_TYPES, type TaxType } from "@/lib/constants";
+import { TAX_TYPES } from "@/lib/constants";
 import { formatDate, formatDateTime } from "@/lib/format";
 import {
   changeAdviceDate,
@@ -30,15 +30,8 @@ import {
   type AdviceItem,
 } from "@/lib/advice/actions";
 
-export type AdvicePeriod = { id: string; code: string; label: string; due_date: string };
-export type AdviceMark = { id: string; advised_on: string; advised_by: string; created_at: string };
-export type AdviceRow = {
-  key: string;
-  client_id: string;
-  client_name: string;
-  tax_type: TaxType;
-  marks: Record<string, AdviceMark>;
-};
+import type { AdviceMark, AdviceRow, GridPeriod as AdvicePeriod } from "@/lib/data/grids";
+export type { AdviceMark, AdviceRow, GridPeriod as AdvicePeriod } from "@/lib/data/grids";
 
 type Props = {
   tab: string;

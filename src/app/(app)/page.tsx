@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, CalendarClock, HandCoins, TriangleAlert, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/page-header";
+import { CardsSkeleton } from "@/components/skeletons";
 import { createClient } from "@/lib/supabase/server";
 import { TAX_TYPES, taxFamily, type PeriodFamily, type TaxType } from "@/lib/constants";
 import { colomboTodayIso, dateToIso, formatAmount, formatDate, isoToDate } from "@/lib/format";
@@ -12,7 +13,7 @@ export default function DashboardPage() {
   return (
     <div className="grid min-w-0 gap-6">
       <PageHeader title="Dashboard" description="What still needs doing: advice to send, money to pay, money to recover." />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<CardsSkeleton />}>
         <Dashboard />
       </Suspense>
     </div>

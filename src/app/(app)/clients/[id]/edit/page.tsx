@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
+import { FormSkeleton } from "@/components/skeletons";
 import { createClient } from "@/lib/supabase/server";
 import { ClientForm } from "../../client-form";
 
 export default function EditClientPage({ params }: PageProps<"/clients/[id]/edit">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+    <Suspense fallback={<FormSkeleton />}>
       <EditClient params={params} />
     </Suspense>
   );

@@ -12,9 +12,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/page-header";
+import { ExportButton } from "@/components/export-button";
+import { TableSkeleton } from "@/components/skeletons";
 import { UrlTabs } from "@/components/url-controls";
-import { createClient } from "@/lib/supabase/server";
-import type { TaxType } from "@/lib/constants";
+import { loadOutstanding, type OutstandingRow } from "@/lib/data/outstanding";
+import { first, type SearchParams } from "@/lib/data/params";
 import { formatAmount, formatDate } from "@/lib/format";
 import { irdCellHref } from "@/lib/links";
 
@@ -24,73 +26,26 @@ export default function OutstandingPage({ searchParams }: PageProps<"/outstandin
       <PageHeader
         title="Outstanding"
         description="Money held for the IRD, and money the firm paid that clients still owe."
+        actions={
+          <Suspense>
+            <ExportButton kind="outstanding" />
+          </Suspense>
+        }
       />
-      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+      <Suspense fallback={<TableSkeleton />}>
         <Outstanding searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-type Obligation = {
-  client_id: string;
-  client_name: string;
-  client_is_active: boolean | null;
-  tax_type: TaxType;
-  period_id: string;
-  period_code: string;
-  period_label: string;
-  year_key: string;
-  due_date: string;
-  received_total: number;
-  paid_total: number;
-  paid_by_firm_total: number;
-  balance: number;
-  first_received_on: string | null;
-  last_paid_on: string | null;
-};
+type Obligation = OutstandingRow;
 
-async function Outstanding({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+async function Outstanding({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
-  const tab = (Array.isArray(sp.tab) ? sp.tab[0] : sp.tab) === "recover" ? "recover" : "pending";
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("obligation_status")
-    .select(
-      "client_id, client_name, client_is_active, tax_type, period_id, period_code, period_label, year_key, due_date, received_total, paid_total, paid_by_firm_total, balance, money_status, first_received_on, last_paid_on",
-    )
-    .in("money_status", ["payment_pending", "to_recover"]);
-
-  if (error) return <p className="text-sm text-destructive">Could not load: {error.message}</p>;
-
-  const all = (data ?? []).map((o) => ({
-    ...o,
-    received_total: Number(o.received_total),
-    paid_total: Number(o.paid_total),
-    paid_by_firm_total: Number(o.paid_by_firm_total),
-    balance: Number(o.balance),
-  })) as (Obligation & { money_status: string })[];
-
-  const pending = all
-    .filter((o) => o.money_status === "payment_pending")
-    // Oldest first: the money held longest is at the top.
-    .sort(
-      (a, b) =>
-        (a.first_received_on ?? "").localeCompare(b.first_received_on ?? "") ||
-        a.due_date.localeCompare(b.due_date) ||
-        a.client_name.localeCompare(b.client_name),
-    );
-  const recover = all
-    .filter((o) => o.money_status === "to_recover")
-    .sort((a, b) => a.client_name.localeCompare(b.client_name) || a.due_date.localeCompare(b.due_date));
-
-  const pendingTotal = pending.reduce((s, o) => s + o.balance, 0);
-  const recoverTotal = recover.reduce((s, o) => s - o.balance, 0);
+  const tab = first(sp.tab) === "recover" ? "recover" : "pending";
+  const { pending, recover, pendingTotal, recoverTotal, error } = await loadOutstanding();
+  if (error) return <p className="text-sm text-destructive">Could not load: {error}</p>;
 
   return (
     <div className="grid min-w-0 gap-4">

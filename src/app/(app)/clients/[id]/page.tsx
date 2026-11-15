@@ -15,22 +15,18 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/components/page-header";
 import { AdviceBadge, MoneyBadge } from "@/components/status-badges";
-import { createClient } from "@/lib/supabase/server";
-import {
-  TAX_TYPES,
-  clientTypeLabel,
-  taxFamily,
-  yearKeys,
-  type MoneyStatus,
-  type TaxType,
-} from "@/lib/constants";
-import { colomboYear, formatAmount, formatDate } from "@/lib/format";
+import { ExportButton } from "@/components/export-button";
+import { TableSkeleton } from "@/components/skeletons";
+import { TAX_TYPES, clientTypeLabel, taxFamily, type MoneyStatus, type TaxType } from "@/lib/constants";
+import { loadClientYear } from "@/lib/data/clients";
+import { isUuid, type SearchParams } from "@/lib/data/params";
+import { formatAmount, formatDate } from "@/lib/format";
 import { DeleteClientButton } from "./delete-client-button";
 import { YearSelect } from "./year-select";
 
 export default function ClientPage({ params, searchParams }: PageProps<"/clients/[id]">) {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground">Loading client…</p>}>
+    <Suspense fallback={<TableSkeleton rows={10} />}>
       <ClientDetail params={params} searchParams={searchParams} />
     </Suspense>
   );
@@ -41,53 +37,13 @@ async function ClientDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
-  const supabase = await createClient();
-
-  const [clientRes, periodsRes, profilesRes, marks, receipts, payments] = await Promise.all([
-    supabase
-      .from("clients")
-      .select("*, client_tax_types(tax_type, is_active)")
-      .eq("id", id)
-      .is("deleted_at", null)
-      .maybeSingle(),
-    supabase.from("tax_periods").select("family, year_key").is("deleted_at", null),
-    supabase.from("profiles").select("id, full_name"),
-    supabase.from("advice_marks").select("id", { count: "exact", head: true }).eq("client_id", id).is("deleted_at", null),
-    supabase.from("client_receipts").select("id", { count: "exact", head: true }).eq("client_id", id).is("deleted_at", null),
-    supabase.from("ird_payments").select("id", { count: "exact", head: true }).eq("client_id", id).is("deleted_at", null),
-  ]);
-
-  const c = clientRes.data;
-  if (!c) notFound();
-
-  // Years that have periods: income "2026/27" counts as 2026, monthly "2026" as 2026.
-  const years = [
-    ...new Set((periodsRes.data ?? []).map((p) => Number(p.year_key.slice(0, 4)))),
-  ].sort((a, b) => b - a);
-  const requested = Number(Array.isArray(sp.year) ? sp.year[0] : sp.year);
-  const thisYear = colomboYear();
-  const year = years.includes(requested)
-    ? requested
-    : years.includes(thisYear)
-      ? thisYear
-      : (years[0] ?? thisYear);
-  const keys = yearKeys(year);
-
-  const { data: obligations } = await supabase
-    .from("obligation_status")
-    .select("*")
-    .eq("client_id", id)
-    .in("year_key", [keys.income, keys.monthly])
-    .order("sort_order");
-
-  const names = new Map((profilesRes.data ?? []).map((p) => [p.id, p.full_name]));
-  const activeTypes = TAX_TYPES.map((t) => t.code).filter((code) =>
-    c.client_tax_types.some((t) => t.is_active && t.tax_type === code),
-  );
-  const hasRecords = (marks.count ?? 0) + (receipts.count ?? 0) + (payments.count ?? 0) > 0;
+  if (!isUuid(id)) notFound();
+  const data = await loadClientYear(id, sp);
+  if (!data) notFound();
+  const { client: c, years, year, keys, obligations, names, activeTypes, hasRecords } = data;
 
   return (
     <div className="grid gap-6">
@@ -102,6 +58,9 @@ async function ClientDetail({
         description={clientTypeLabel(c.client_type)}
         actions={
           <>
+            <Suspense>
+              <ExportButton kind="client" extra={{ id: c.id, year: String(year) }} />
+            </Suspense>
             <Link href={`/clients/${c.id}/edit`} className={buttonVariants({ variant: "outline" })}>
               <Pencil className="size-4" />
               Edit
