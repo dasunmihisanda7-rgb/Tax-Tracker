@@ -27,7 +27,9 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // Local scope: sign out this browser only. The default ("global") would also end
+  // the same person's sessions on every other device.
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }
 
@@ -48,7 +50,7 @@ export async function setPassword(_prev: FormState, formData: FormData): Promise
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
+  if (!data.user) redirect("/auth/signout");
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: error.message };

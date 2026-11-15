@@ -19,7 +19,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
 async function AuthedShell({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
+  // A cookie the proxy accepted but Supabase rejects (revoked or expired session):
+  // clear it first, otherwise /login would bounce straight back here.
+  if (!data.user) redirect("/auth/signout");
 
   return (
     <div className="flex flex-1">

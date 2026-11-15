@@ -94,6 +94,15 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Page files may only export the page and its config. Put shared constants in a separate module.
 - After editing a shared module, if the dev server says an export "is not a function", its cache is stale: restart the preview server.
 
+## Exports, Settings, deployment (Phase 7)
+- Data for every screen comes from shared loaders in `src/lib/data/` (`clients.ts`, `entries.ts`, `grids.ts`, `outstanding.ts`, `params.ts`). Pages and Excel exports call the same loader, so they always show the same rows and totals.
+- Excel: `GET /export/<kind>?<the screen's query params>` (`src/app/export/[kind]/route.ts`, built in `src/lib/exports.ts` with helpers in `src/lib/excel.ts`). Kinds: `clients, client (id, year), advice, receipts, ird-grid, payments, outstanding`. `ExportButton` in `src/components/export-button.tsx` forwards the current URL params. Dates are real Excel dates (`dd/mm/yyyy`), money is numbers (`#,##0.00`). The IRD grid export follows the old workbook layout: code headers merged over Date and Amount, part-payments on extra rows, held (amber) and to-recover (red) fills with notes.
+- Settings (`/settings`): `generate_periods` button, due-date editor, read-only staff list (`profiles`).
+- Loading: `src/components/skeletons.tsx` (`TableSkeleton`, `GridSkeleton`, `FormSkeleton`, `CardsSkeleton`). Errors: `src/app/(app)/error.tsx`, `not-found.tsx`.
+- Vercel: team `dasunmihisanda7-2182's projects` (`team_U0iiVhk08vm4YTTyaHkwc5py`), project `tax-tracker` (`prj_yH2KmBHsS2grqwWHqNNkkFUg55Un`), linked to GitHub, so every push to `main` deploys to production. Env vars: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` only (no service-role key is used). `vercel.json` pins functions to `bom1` (Mumbai), next to Supabase `ap-south-1`.
+- Supabase Auth → URL Configuration: the Site URL must be the production URL, and the Redirect URLs must include it plus `http://localhost:3000/**` for local work.
+- Never type passwords on the live site. Staff sign in there themselves.
+
 ## Testing in the browser pane
 - A dedicated test staff account is stored in `.env.local` as `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` (git-ignored). Use it only on localhost.
 - Test data is named `TEST Phase<n> …` so it can be spotted and soft-deleted later.

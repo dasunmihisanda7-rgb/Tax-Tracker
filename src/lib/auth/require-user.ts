@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function requireUser() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  if (!data.user) redirect("/login");
+  if (!data.user) redirect("/auth/signout");
   return { supabase, user: data.user };
 }
 
