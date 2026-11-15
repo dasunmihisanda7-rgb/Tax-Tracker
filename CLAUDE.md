@@ -91,6 +91,7 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Status and dashboard (Phase 6): `obligation_status` also has `first_received_on`, `last_received_on` and `last_paid_on` (migration `status_view_dates`). Outstanding `/outstanding?tab=pending|recover`: pending = `money_status = 'payment_pending'`, sorted by `first_received_on` (oldest money first). Recover = `'to_recover'`, grouped by client with subtotals. Both include inactive clients (money is still owed). Dashboard: "next due period" = the first `tax_periods.due_date >= today` (Colombo) in each family, with not-advised counts linking to `notAdvisedHref`. Links are built in `src/lib/links.ts` (`irdCellHref`, `notAdvisedHref`, `tabForTaxType`).
 - Side panel = shadcn `Sheet` (Base UI Dialog). The `DatePicker` popover works inside it with the mouse.
 - After adding a new dynamic route, run `npx next typegen` before `tsc` (`PageProps<"/new/route">` types).
+- `cacheComponents` keeps recently visited pages alive (React `<Activity>`), so form state survives navigation. Entry forms (`ClientForm`, `ReceiptForm`, `ImportForm`) wrap themselves in `FreshOnNavigation` (`src/components/fresh-on-navigation.tsx`, keyed on `useRouter().bfcacheId`) so each visit starts blank. Do the same for any new add/edit form.
 - Page files may only export the page and its config. Put shared constants in a separate module.
 - After editing a shared module, if the dev server says an export "is not a function", its cache is stale: restart the preview server.
 

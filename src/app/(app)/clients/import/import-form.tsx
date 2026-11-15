@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FreshOnNavigation } from "@/components/fresh-on-navigation";
 import Link from "next/link";
 import { Download, FileUp } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +27,14 @@ import {
 } from "@/lib/clients/actions";
 
 export function ImportForm() {
+  return (
+    <FreshOnNavigation>
+      <ImportFormInner />
+    </FreshOnNavigation>
+  );
+}
+
+function ImportFormInner() {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);

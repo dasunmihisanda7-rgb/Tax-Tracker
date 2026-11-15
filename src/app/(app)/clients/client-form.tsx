@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { FreshOnNavigation } from "@/components/fresh-on-navigation";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,15 @@ export const EMPTY_CLIENT: ClientFormValues = {
 
 const CLIENT_TYPE_OPTIONS = CLIENT_TYPES.map((t) => ({ value: t.value, label: t.label }));
 
-export function ClientForm({ initial }: { initial: ClientFormValues }) {
+export function ClientForm(props: { initial: ClientFormValues }) {
+  return (
+    <FreshOnNavigation>
+      <ClientFormInner {...props} />
+    </FreshOnNavigation>
+  );
+}
+
+function ClientFormInner({ initial }: { initial: ClientFormValues }) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [error, setError] = useState<{ message: string; field?: string } | null>(null);

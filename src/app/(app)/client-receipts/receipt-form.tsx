@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { FreshOnNavigation } from "@/components/fresh-on-navigation";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -37,7 +38,15 @@ export type ReceiptFormValues = {
   lines: Omit<Line, "key">[];
 };
 
-export function ReceiptForm({
+export function ReceiptForm(props: React.ComponentProps<typeof ReceiptFormInner>) {
+  return (
+    <FreshOnNavigation>
+      <ReceiptFormInner {...props} />
+    </FreshOnNavigation>
+  );
+}
+
+function ReceiptFormInner({
   clients,
   periods,
   initial,
