@@ -27,6 +27,32 @@ export const CLIENT_TYPE_VALUES = CLIENT_TYPES.map((t) => t.value) as [ClientTyp
 export const clientTypeLabel = (v: ClientType) =>
   CLIENT_TYPES.find((t) => t.value === v)?.label ?? v;
 
+export type FundingMethod = Enums<"funding_method">;
+export type PaymentMode = Enums<"payment_mode">;
+export type PaidBy = Enums<"paid_by">;
+
+/** How the money moved (PLAN.md section 4). */
+export const FUNDING_METHODS: { value: FundingMethod; label: string; hint: string }[] = [
+  { value: "client_paid_first", label: "Client paid first", hint: "The client gave the money before the IRD payment" },
+  { value: "reimbursement", label: "Reimbursement", hint: "The firm paid the IRD first; the client is paying it back" },
+];
+export const FUNDING_METHOD_VALUES = FUNDING_METHODS.map((f) => f.value) as [FundingMethod, ...FundingMethod[]];
+export const fundingLabel = (v: FundingMethod) => FUNDING_METHODS.find((f) => f.value === v)?.label ?? v;
+
+export const PAYMENT_MODES: { value: PaymentMode; label: string }[] = [
+  { value: "cheque", label: "Cheque" },
+  { value: "online_transfer", label: "Online transfer" },
+  { value: "cash", label: "Cash" },
+];
+export const PAYMENT_MODE_VALUES = PAYMENT_MODES.map((m) => m.value) as [PaymentMode, ...PaymentMode[]];
+export const paymentModeLabel = (v: PaymentMode) => PAYMENT_MODES.find((m) => m.value === v)?.label ?? v;
+
+export const PAID_BY: { value: PaidBy; label: string }[] = [
+  { value: "firm", label: "Firm" },
+  { value: "client_direct", label: "Client directly" },
+];
+export const paidByLabel = (v: PaidBy) => PAID_BY.find((p) => p.value === v)?.label ?? v;
+
 export type MoneyStatus = "no_activity" | "payment_pending" | "to_recover" | "settled";
 
 /**

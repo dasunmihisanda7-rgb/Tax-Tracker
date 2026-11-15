@@ -81,6 +81,13 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Dates: `src/components/date-picker.tsx` (`DatePicker`, ISO string in and out, DD/MM/YYYY display, `max`/`min`, `compact` for grid cells). Helpers: `colomboTodayIso`, `isoToDate`, `dateToIso`.
 - URL-driven controls: `src/components/url-controls.tsx` (`UrlTabs`, `UrlSelect`, `useUrlParams`). Tabs for Tax Advice / IRD Payments: `src/app/(app)/tax-advice/tabs.ts` (`ADVICE_TABS`).
 - Tax Advice URL: `/tax-advice?tab=income|wht|apit&year=2026&na=<period code>` (`na` = "not advised for"). The dashboard links to this.
+- Client Receipts (Phase 4): one entry = one client and a header (date, funding method, payment mode, ref no, note) with N lines (tax type, period, amount). It is saved as N `client_receipts` rows in one `insert` (atomic). Edit changes one row only. Delete = soft delete. Shared zod schema in `src/lib/receipts/schema.ts`, actions in `src/lib/receipts/actions.ts`, form data loader `src/lib/receipts/form-data.ts` (`loadEntryFormData`, also used for IRD payments).
+- Money input: `src/lib/money.ts` (`parseAmount` accepts "25,000.50"; `amountField` zod). Amount inputs reformat on blur with `formatAmount`.
+- `src/components/entry-filters.tsx` (`EntryFilters`): the URL filter bar for the receipts and payments lists. Params: `client, tax, year, period, from, to, ref` plus extra selects (`funding`, `mode`, or `paid_by`).
+- `src/components/option-combobox.tsx` (`OptionCombobox`): a searchable picker for clients and periods.
+- Embedding periods from receipts/payments needs the FK hint: `tax_periods!client_receipts_period_family_fkey(...)`, `profiles!client_receipts_created_by_fkey(full_name)`.
+- `friendlyDbError` maps Postgres codes (23505 client name, 23514 ref_no / amount, 23503 period family / client tax type) to staff-friendly messages.
+- After adding a new dynamic route, run `npx next typegen` before `tsc` (`PageProps<"/new/route">` types).
 - Page files may only export the page and its config. Put shared constants in a separate module.
 - After editing a shared module, if the dev server says an export "is not a function", its cache is stale: restart the preview server.
 
@@ -89,6 +96,9 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Test data is named `TEST Phase<n> …` so it can be spotted and soft-deleted later.
 - When the pane is hidden it doesn't paint, so streamed `<Suspense>` content can look stuck on its fallback. Take a screenshot (which forces a paint) before treating that as a bug.
 - `form_input` doesn't trigger React's onChange on controlled inputs. Click and type instead.
+- Base UI selects keep closed lists in the DOM, so a script that clicks an option may hit another select's hidden list. Open the select with a real click by `ref`, then click the option found by `find` (by `ref`). For comboboxes, type and press ArrowDown + Enter.
+- Screenshots can be zoomed relative to the viewport. Prefer clicking by `ref` over coordinates.
+- To check filters and totals without the hidden-pane paint problem, `fetch()` the page URL inside the tab and parse it with DOMParser (rows `tr[data-receipt]`, total `[data-total]`).
 
 ## Layout
 - `src/app/login`, `src/app/auth/*`: public auth pages
