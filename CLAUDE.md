@@ -102,6 +102,9 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Vercel: team `dasunmihisanda7-2182's projects` (`team_U0iiVhk08vm4YTTyaHkwc5py`), project `tax-tracker` (`prj_yH2KmBHsS2grqwWHqNNkkFUg55Un`), linked to GitHub, so every push to `main` deploys to production. Env vars: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` only (no service-role key is used). `vercel.json` pins functions to `bom1` (Mumbai), next to Supabase `ap-south-1`.
 - Supabase Auth → URL Configuration: the Site URL must be the production URL, and the Redirect URLs must include it plus `http://localhost:3000/**` for local work.
 - Never type passwords on the live site. Staff sign in there themselves.
+- Live: https://tax-tracker-peach.vercel.app (released 15/11/2026). On release all TEST data was permanently removed: the database started with 0 clients, the tax periods for 2025/26, 2026/27, 2027/28 and calendar 2025–2027, and 2 staff profiles (including the test account). Don't seed test data into the live project. Test on localhost and clean up afterwards.
+- Sign-out uses `scope: "local"`. A revoked or expired session goes to `/auth/signout` (clears `sb-*` cookies) rather than `/login`, to avoid a proxy redirect loop.
+- Vercel's bot protection may show a "verifying your browser" page to bursts of scripted requests. It clears by itself. Don't try to bypass it.
 
 ## Testing in the browser pane
 - A dedicated test staff account is stored in `.env.local` as `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` (git-ignored). Use it only on localhost.
