@@ -304,6 +304,7 @@ export type Database = {
       colombo_today: { Args: never; Returns: string }
       generate_periods: { Args: { p_year: number }; Returns: number }
       import_clients: { Args: { p_rows: Json }; Returns: Json }
+      mark_advice: { Args: { p_items: Json; p_advised_on?: string | null }; Returns: number }
       save_client: {
         Args: {
           p_client_type: E["client_type"]

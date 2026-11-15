@@ -68,6 +68,8 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - TS types live in `src/lib/supabase/database.types.ts`, generated with the Supabase MCP `generate_typescript_types` and trimmed of the fake view relationships. Regenerate after every migration.
 - Client writes go through database functions (security invoker): `save_client` (client and tax types in one transaction), `import_clients(jsonb)` (each row saved separately, returns a per-row result), `soft_delete_client` (refused if the client has live marks, receipts or payments).
 
+- Advice marks (Phase 3): the `advice_marks_guard` trigger sets `advised_by` from `auth.uid()` on insert (later changes can't alter it) and refuses future `advised_on`. `mark_advice(p_items jsonb, p_advised_on date)` bulk-inserts, skipping obligations already marked (safe to repeat), and returns the count added. Untick = set `deleted_at`; change date = update `advised_on`.
+
 ## App patterns (Phase 2 onward)
 - `src/lib/supabase/server.ts` `createClient()` calls `connection()` first. Supabase reads `Date.now()`, and Cache Components rejects that during prerender unless rendering waits for the request. Don't remove it.
 - Pages that read data: the page component is sync and passes `params` / `searchParams` promises into an async component wrapped in `<Suspense>`.
@@ -75,7 +77,12 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Shared helpers: `src/lib/format.ts` (`formatRs`, `formatAmount`, `formatDate` DD/MM/YYYY, `colomboYear`), `src/lib/constants.ts` (`TAX_TYPES`, `yearKeys(year)`, labels), `src/components/status-badges.tsx` (`AdviceBadge`, `MoneyBadge`), `src/components/simple-select.tsx`, `src/components/page-header.tsx`.
 - shadcn here uses **Base UI**: use `render={<Button />}` instead of `asChild`. A Select needs `items` to show labels.
 - Filters keep their state in the URL (`router.replace`), and server components read `searchParams`.
-- "Year" means income year of assessment Y/Y+1 together with WHT/APIT calendar year Y (`yearKeys`).
+- "Year" means income year of assessment Y/Y+1 together with WHT/APIT calendar year Y (`yearKeys`). Screens with tabs default the income tab to `currentAssessmentYear()` and the monthly tabs to `colomboYear()`.
+- Dates: `src/components/date-picker.tsx` (`DatePicker`, ISO string in and out, DD/MM/YYYY display, `max`/`min`, `compact` for grid cells). Helpers: `colomboTodayIso`, `isoToDate`, `dateToIso`.
+- URL-driven controls: `src/components/url-controls.tsx` (`UrlTabs`, `UrlSelect`, `useUrlParams`). Tabs for Tax Advice / IRD Payments: `src/app/(app)/tax-advice/tabs.ts` (`ADVICE_TABS`).
+- Tax Advice URL: `/tax-advice?tab=income|wht|apit&year=2026&na=<period code>` (`na` = "not advised for"). The dashboard links to this.
+- Page files may only export the page and its config. Put shared constants in a separate module.
+- After editing a shared module, if the dev server says an export "is not a function", its cache is stale: restart the preview server.
 
 ## Testing in the browser pane
 - A dedicated test staff account is stored in `.env.local` as `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` (git-ignored). Use it only on localhost.
