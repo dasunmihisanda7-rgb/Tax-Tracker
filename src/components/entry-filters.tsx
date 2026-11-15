@@ -57,7 +57,7 @@ export function EntryFilters({
         }))
     : [];
 
-  const anyFilter = [...params.keys()].length > 0;
+  const anyFilter = [...params.keys()].some((k) => k !== "view");
 
   return (
     <div className="grid gap-3 rounded-lg border p-3">

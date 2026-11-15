@@ -87,6 +87,8 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - `src/components/option-combobox.tsx` (`OptionCombobox`): a searchable picker for clients and periods.
 - Embedding periods from receipts/payments needs the FK hint: `tax_periods!client_receipts_period_family_fkey(...)`, `profiles!client_receipts_created_by_fkey(full_name)`.
 - `friendlyDbError` maps Postgres codes (23505 client name, 23514 ref_no / amount, 23503 period family / client tax type) to staff-friendly messages.
+- IRD Payments (Phase 5): `/ird-payments?view=grid|list&tab=income|wht|apit&year=Y&open=<client_id>:<tax_type>:<period_id>`. `open` opens the side panel for one obligation. Outstanding and the dashboard can link straight to a cell this way. The grid reads totals and status from `obligation_status` (`client_is_active = true`) and stacks payments and receipts per cell. Held money (balance > 0) is amber, to-recover (balance < 0) is red. Payment writes are in `src/lib/payments/actions.ts` (add / update / soft delete), with the zod schema in `src/lib/payments/schema.ts` (no future dates, any date after the period).
+- Side panel = shadcn `Sheet` (Base UI Dialog). The `DatePicker` popover works inside it with the mouse.
 - After adding a new dynamic route, run `npx next typegen` before `tsc` (`PageProps<"/new/route">` types).
 - Page files may only export the page and its config. Put shared constants in a separate module.
 - After editing a shared module, if the dev server says an export "is not a function", its cache is stale: restart the preview server.
@@ -98,6 +100,7 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - `form_input` doesn't trigger React's onChange on controlled inputs. Click and type instead.
 - Base UI selects keep closed lists in the DOM, so a script that clicks an option may hit another select's hidden list. Open the select with a real click by `ref`, then click the option found by `find` (by `ref`). For comboboxes, type and press ArrowDown + Enter.
 - Screenshots can be zoomed relative to the viewport. Prefer clicking by `ref` over coordinates.
+- `ref` clicks can land at stale coordinates inside scrolled panels or popovers. To click a precise element, measure it with `getBoundingClientRect()` and click at that point × (800 / innerWidth) in screenshot coordinates.
 - To check filters and totals without the hidden-pane paint problem, `fetch()` the page URL inside the tab and parse it with DOMParser (rows `tr[data-receipt]`, total `[data-total]`).
 
 ## Layout
