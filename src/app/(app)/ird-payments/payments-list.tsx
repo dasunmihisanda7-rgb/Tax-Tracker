@@ -14,12 +14,12 @@ import { EntryFilters } from "@/components/entry-filters";
 import { createClient } from "@/lib/supabase/server";
 import { PAID_BY, paidByLabel, yearKeys, type PaidBy, type TaxType } from "@/lib/constants";
 import { formatAmount, formatDate } from "@/lib/format";
+import { irdCellHref } from "@/lib/links";
 
 const ROW_LIMIT = 5000;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 const isUuid = (v: string) => /^[0-9a-f-]{36}$/i.test(v);
 const isIso = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v);
-const tabFor = (t: TaxType) => (t === "WHT" ? "wht" : t === "APIT" ? "apit" : "income");
 
 /** Flat list of IRD payments with the same filters as Client Receipts. */
 export async function PaymentsList({ sp }: { sp: Record<string, string | string[] | undefined> }) {
@@ -135,7 +135,7 @@ export async function PaymentsList({ sp }: { sp: Record<string, string | string[
                     <TableCell className="text-muted-foreground">{r.profiles?.full_name}</TableCell>
                     <TableCell>
                       <Link
-                        href={`/ird-payments?tab=${tabFor(r.tax_type)}&year=${r.tax_periods?.year_key.slice(0, 4)}&open=${r.client_id}:${r.tax_type}:${r.period_id}`}
+                        href={irdCellHref({ ...r, year_key: r.tax_periods?.year_key ?? "" })}
                         className={buttonVariants({ variant: "ghost", size: "sm" })}
                         aria-label={`Open ${r.clients?.name} ${r.tax_type} ${r.tax_periods?.code} in the grid`}
                       >

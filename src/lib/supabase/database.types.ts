@@ -283,6 +283,9 @@ export type Database = {
           client_name: string | null
           client_type: E["client_type"] | null
           due_date: string | null
+          first_received_on: string | null
+          last_received_on: string | null
+          last_paid_on: string | null
           is_advised: boolean | null
           money_status: string | null
           paid_by_client_direct_total: number | null
