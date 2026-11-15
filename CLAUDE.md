@@ -65,11 +65,28 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - `profiles` rows are created by a trigger on `auth.users` (`full_name` from user metadata, else the email's local part).
 - `obligation_status` (security_invoker): one row per active client tax type × non-deleted period. `money_status` ∈ `no_activity`, `payment_pending`, `to_recover`, `settled`. It also has `paid_by_firm_total` and `paid_by_client_direct_total`.
 - `generate_periods(year)` returns the number of rows added (0 when re-run). Starting periods: 2025/26, 2026/27, calendar 2025 and 2026.
-- Generate TS types with the Supabase MCP `generate_typescript_types` into `src/lib/supabase/database.types.ts` when code first needs them (Phase 2).
+- TS types live in `src/lib/supabase/database.types.ts`, generated with the Supabase MCP `generate_typescript_types` and trimmed of the fake view relationships. Regenerate after every migration.
+- Client writes go through database functions (security invoker): `save_client` (client and tax types in one transaction), `import_clients(jsonb)` (each row saved separately, returns a per-row result), `soft_delete_client` (refused if the client has live marks, receipts or payments).
+
+## App patterns (Phase 2 onward)
+- `src/lib/supabase/server.ts` `createClient()` calls `connection()` first. Supabase reads `Date.now()`, and Cache Components rejects that during prerender unless rendering waits for the request. Don't remove it.
+- Pages that read data: the page component is sync and passes `params` / `searchParams` promises into an async component wrapped in `<Suspense>`.
+- Server actions: `requireUser()` from `src/lib/auth/require-user.ts` first, zod validation, then `refresh()` from `next/cache` after a write. Map Postgres errors with `friendlyDbError`.
+- Shared helpers: `src/lib/format.ts` (`formatRs`, `formatAmount`, `formatDate` DD/MM/YYYY, `colomboYear`), `src/lib/constants.ts` (`TAX_TYPES`, `yearKeys(year)`, labels), `src/components/status-badges.tsx` (`AdviceBadge`, `MoneyBadge`), `src/components/simple-select.tsx`, `src/components/page-header.tsx`.
+- shadcn here uses **Base UI**: use `render={<Button />}` instead of `asChild`. A Select needs `items` to show labels.
+- Filters keep their state in the URL (`router.replace`), and server components read `searchParams`.
+- "Year" means income year of assessment Y/Y+1 together with WHT/APIT calendar year Y (`yearKeys`).
+
+## Testing in the browser pane
+- A dedicated test staff account is stored in `.env.local` as `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` (git-ignored). Use it only on localhost.
+- Test data is named `TEST Phase<n> …` so it can be spotted and soft-deleted later.
+- When the pane is hidden it doesn't paint, so streamed `<Suspense>` content can look stuck on its fallback. Take a screenshot (which forces a paint) before treating that as a bug.
+- `form_input` doesn't trigger React's onChange on controlled inputs. Click and type instead.
 
 ## Layout
 - `src/app/login`, `src/app/auth/*`: public auth pages
-- `src/app/(app)/*`: signed-in screens, sharing the sidebar layout
+- `src/app/(app)/*`: signed-in screens, sharing the sidebar layout. Clients: `clients/` (list), `clients/new`, `clients/[id]` (client page), `clients/[id]/edit`, `clients/import`
+- `src/lib/clients/`: `schema.ts` (zod and CSV parsing, shared with the client side), `actions.ts` (server actions)
 - `src/components/ui`: shadcn components; `src/components/app-shell`: sidebar and nav
 - `src/lib/nav.ts`: sidebar items; `src/lib/auth/actions.ts`: sign-in, sign-out and set-password actions
 - `supabase/`: CLI config and migrations
