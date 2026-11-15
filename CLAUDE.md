@@ -53,6 +53,20 @@ An internal web app that tracks, for every client and tax period, whether the cl
 - Balance = received − paid via the firm (`paid_by = client directly` is excluded from the balance but still shown as paid). All screens read status from the `obligation_status` view.
 - One cheque or transfer covering several periods is saved as several receipt rows with the same `ref_no`. `ref_no` is required for cheque and online transfer.
 
+## Database (Phase 1, `supabase/migrations/`)
+- Migrations are applied via the Supabase MCP `apply_migration`. The local file must then be renamed to the version the server recorded (`list_migrations`), so the repo and `supabase_migrations.schema_migrations` match.
+- Enums: `client_type`, `tax_type`, `period_family`, `funding_method` (`client_paid_first`, `reimbursement`), `payment_mode` (`cheque`, `online_transfer`, `cash`), `paid_by` (`firm`, `client_direct`), `audit_action`.
+- Triggers set `created_*` and `updated_*` from `auth.uid()`; never send them from the app.
+- Tax type ↔ period family is enforced by a generated `period_family` column plus a composite FK `(period_id, period_family)` → `tax_periods (id, family)`. Records also have an FK `(client_id, tax_type)` → `client_tax_types`, so the client must be registered for that tax type.
+- Client names are unique case-insensitively among non-deleted rows. `client_tax_types` is unique on (client, tax type): untick = `is_active = false`, never a second row.
+- Advice marks: one live mark per obligation (partial unique index). Untick = set `deleted_at`; re-tick = insert a new row. `advised_on` defaults to today in Colombo.
+- DELETE is revoked for `authenticated`. Soft-delete with `update … set deleted_at = now()`; the audit log records that as action `delete`.
+- `audit_log` is select-only for staff. Only the `write_audit_log` trigger (security definer) writes it.
+- `profiles` rows are created by a trigger on `auth.users` (`full_name` from user metadata, else the email's local part).
+- `obligation_status` (security_invoker): one row per active client tax type × non-deleted period. `money_status` ∈ `no_activity`, `payment_pending`, `to_recover`, `settled`. It also has `paid_by_firm_total` and `paid_by_client_direct_total`.
+- `generate_periods(year)` returns the number of rows added (0 when re-run). Starting periods: 2025/26, 2026/27, calendar 2025 and 2026.
+- Generate TS types with the Supabase MCP `generate_typescript_types` into `src/lib/supabase/database.types.ts` when code first needs them (Phase 2).
+
 ## Layout
 - `src/app/login`, `src/app/auth/*`: public auth pages
 - `src/app/(app)/*`: signed-in screens, sharing the sidebar layout
